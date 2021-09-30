@@ -14,7 +14,7 @@ import (
 
 var (
 	WhiteSpaces  = regexp.MustCompile("\\s+")
-	Punctuations = regexp.MustCompile("\\.,")
+	Punctuations = regexp.MustCompile("[\\.,]")
 )
 
 func prepareStream(sample string) []string {
@@ -73,6 +73,8 @@ func Test_SummaryStream_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testi
 }
 
 // Generated 50 paragraphs, 4623 words, 31168 bytes of Lorem Ipsum
+// With 1050 uniq words
+// $ tr -c '[:alnum:]' '[\n*]' < testdata/lorem_ipsum.txt | sort | uniq -c | sort -nr | head  -
 func Test_Lorem_Ipsum(t *testing.T) {
 	tester := assert.New(t)
 
@@ -82,8 +84,8 @@ func Test_Lorem_Ipsum(t *testing.T) {
 	sample, err := ioutil.ReadAll(f)
 	tester.NoError(err)
 
-	// 500 counters with error range of ~4 words (4623 * 0.001)
-	ss, err := spaceSaving.NewStreamSummary(0.001)
+	// 500 counters with error range of ~9 words (4623 * 0.001)
+	ss, err := spaceSaving.NewStreamSummary(0.002)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
