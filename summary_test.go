@@ -1,6 +1,9 @@
 package space_saving_test
 
 import (
+	"io/ioutil"
+	"os"
+	"regexp"
 	"strings"
 	"testing"
 
@@ -9,7 +12,14 @@ import (
 	spaceSaving "github.com/lujiajing1126/go-space-saving"
 )
 
+var (
+	WhiteSpaces  = regexp.MustCompile("\\s+")
+	Punctuations = regexp.MustCompile("\\.,")
+)
+
 func prepareStream(sample string) []string {
+	sample = Punctuations.ReplaceAllString(sample, "")
+	sample = WhiteSpaces.ReplaceAllString(sample, " ")
 	return strings.Split(sample, " ")
 }
 
@@ -60,4 +70,33 @@ func Test_SummaryStream_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testi
 		top3Strings = append(top3Strings, top3item.Val().(string))
 	}
 	tester.Equal(top3Strings, []string{"a", "g", "f"})
+}
+
+// Generated 50 paragraphs, 4623 words, 31168 bytes of Lorem Ipsum
+func Test_Lorem_Ipsum(t *testing.T) {
+	tester := assert.New(t)
+
+	f, err := os.Open("./testdata/lorem_ipsum.txt")
+	tester.NoError(err)
+	tester.NotNil(f)
+	sample, err := ioutil.ReadAll(f)
+	tester.NoError(err)
+
+	// 500 counters with error range of ~4 words (4623 * 0.001)
+	ss, err := spaceSaving.NewStreamSummary(0.001)
+	tester.NoError(err)
+	tester.NotNil(ss)
+
+	stream := prepareStream(string(sample))
+	for _, singleItem := range stream {
+		ss.Record(singleItem)
+	}
+
+	topCounters := ss.TopK(5)
+	tester.Len(topCounters, 5)
+	var topStrings []string
+	for _, topitem := range topCounters {
+		topStrings = append(topStrings, topitem.Val().(string))
+	}
+	tester.Contains(topStrings, "et")
 }
