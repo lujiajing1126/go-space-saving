@@ -1,4 +1,4 @@
-package space_saving_test
+package cms
 
 import (
 	"io/ioutil"
@@ -8,9 +8,13 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	spaceSaving "github.com/lujiajing1126/go-space-saving"
 )
+
+type StringRepl string
+
+func (sr StringRepl) Bytes() []byte {
+	return []byte(sr)
+}
 
 var (
 	WhiteSpaces  = regexp.MustCompile("\\s+")
@@ -23,9 +27,9 @@ func prepareStream(sample string) []string {
 	return strings.Split(sample, " ")
 }
 
-func Test_SummaryStream(t *testing.T) {
+func Test_CountMinSketch(t *testing.T) {
 	tester := assert.New(t)
-	ss, err := spaceSaving.NewStreamSummary(0.01)
+	ss, err := New(10, 4, 3)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
@@ -33,21 +37,21 @@ func Test_SummaryStream(t *testing.T) {
 	sample := "a b b c c c e e e e e d d d d g g g g g g g f f f f f f"
 	stream := prepareStream(sample)
 	for _, singleItem := range stream {
-		ss.Record(singleItem)
+		ss.Record(StringRepl(singleItem))
 	}
-	top3Counters := ss.TopK(3)
+	top3Counters := ss.TopK()
 	tester.Len(top3Counters, 3)
 	var top3Strings []string
 	for _, top3item := range top3Counters {
-		top3Strings = append(top3Strings, top3item.Val().(string))
+		top3Strings = append(top3Strings, string(top3item.Val().(StringRepl)))
 	}
 	tester.Equal(top3Strings, []string{"g", "f", "e"})
 }
 
-func Test_SummaryStream_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testing.T) {
+func Test_CountMinSketch_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testing.T) {
 	tester := assert.New(t)
 	// Init with 100 counters
-	ss, err := spaceSaving.NewStreamSummary(0.01)
+	ss, err := New(10, 4, 3)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
@@ -55,19 +59,19 @@ func Test_SummaryStream_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testi
 	sample := "a b b c c c e e e e e d d d d g g g g g g g f f f f f f"
 	stream := prepareStream(sample)
 	for _, singleItem := range stream {
-		ss.Record(singleItem)
+		ss.Record(StringRepl(singleItem))
 	}
 
 	// Record skewed data stream
 	for i := 0; i < 200; i++ {
-		ss.Record("a")
+		ss.Record(StringRepl("a"))
 	}
 
-	top3Counters := ss.TopK(3)
+	top3Counters := ss.TopK()
 	tester.Len(top3Counters, 3)
 	var top3Strings []string
 	for _, top3item := range top3Counters {
-		top3Strings = append(top3Strings, top3item.Val().(string))
+		top3Strings = append(top3Strings, string(top3item.Val().(StringRepl)))
 	}
 	tester.Equal(top3Strings, []string{"a", "g", "f"})
 }
@@ -78,27 +82,27 @@ func Test_SummaryStream_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testi
 func Test_Lorem_Ipsum(t *testing.T) {
 	tester := assert.New(t)
 
-	f, err := os.Open("./testdata/lorem_ipsum.txt")
+	f, err := os.Open("../testdata/lorem_ipsum.txt")
 	tester.NoError(err)
 	tester.NotNil(f)
 	sample, err := ioutil.ReadAll(f)
 	tester.NoError(err)
 
 	// 500 counters with error range of ~9 words (4623 * 0.001)
-	ss, err := spaceSaving.NewStreamSummary(0.002)
+	ss, err := NewWithEstimates(0.01, 0.99, 5)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
 	stream := prepareStream(string(sample))
 	for _, singleItem := range stream {
-		ss.Record(singleItem)
+		ss.Record(StringRepl(singleItem))
 	}
 
-	topCounters := ss.TopK(5)
+	topCounters := ss.TopK()
 	tester.Len(topCounters, 5)
 	var topStrings []string
 	for _, topitem := range topCounters {
-		topStrings = append(topStrings, topitem.Val().(string))
+		topStrings = append(topStrings, string(topitem.Val().(StringRepl)))
 	}
 	tester.Contains(topStrings, "et")
 }

@@ -1,4 +1,4 @@
-package space_saving
+package spacesaving
 
 import (
 	"container/list"
