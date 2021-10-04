@@ -84,7 +84,7 @@ func Test_Lorem_Ipsum(t *testing.T) {
 	sample, err := ioutil.ReadAll(f)
 	tester.NoError(err)
 
-	// 500 counters with error range of ~9 words (4623 * 0.001)
+	// 500 counters with error range of ~9 words (4623 * 0.002)
 	ss, err := spaceSaving.NewStreamSummary(0.002)
 	tester.NoError(err)
 	tester.NotNil(ss)

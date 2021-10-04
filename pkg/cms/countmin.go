@@ -6,6 +6,9 @@ import (
 	"hash"
 	"hash/fnv"
 	"math"
+
+	"github.com/lujiajing1126/go-space-saving/pkg/common"
+	"github.com/lujiajing1126/go-space-saving/pkg/spacesaving"
 )
 
 type CountMinSketch struct {
@@ -17,8 +20,9 @@ type CountMinSketch struct {
 	m [][]uint64
 	// h is the hash function.
 	h hash.Hash64
-	// heap
-	topHeap *cmsHeap
+
+	topK     uint
+	topStore *spacesaving.StreamSummary
 }
 
 func New(d uint, w uint, topK uint) (*CountMinSketch, error) {
@@ -26,12 +30,15 @@ func New(d uint, w uint, topK uint) (*CountMinSketch, error) {
 		return nil, errors.New("width and/or depth must be greater than zero")
 	}
 
+	ss, _ := spacesaving.NewStreamSummaryWithFixedCap(uint64(topK))
+
 	s := &CountMinSketch{
-		d:       d,
-		w:       w,
-		h:       fnv.New64(),
-		m:       make([][]uint64, d),
-		topHeap: newCmsHeap(topK),
+		d:        d,
+		w:        w,
+		h:        fnv.New64(),
+		m:        make([][]uint64, d),
+		topK:     topK,
+		topStore: ss,
 	}
 	for i := range s.m {
 		s.m[i] = make([]uint64, s.w)
@@ -57,7 +64,7 @@ func NewWithEstimates(epsilon, delta float64, topK uint) (*CountMinSketch, error
 	return New(d, w, topK)
 }
 
-func (s *CountMinSketch) Record(item Serializable) {
+func (s *CountMinSketch) Record(item common.Serializable) {
 	var min uint64
 	h := s.baseHashes(item.Bytes())
 	for i := uint(0); i < s.d; i++ {
@@ -67,7 +74,7 @@ func (s *CountMinSketch) Record(item Serializable) {
 			min = s.m[i][loc]
 		}
 	}
-	s.topHeap.Push(item, min)
+	s.topStore.Record(item)
 }
 
 // get the two basic hash function values for data.
@@ -93,6 +100,6 @@ func (s *CountMinSketch) Width() uint {
 	return s.w
 }
 
-func (s *CountMinSketch) TopK() []*counter {
-	return s.topHeap.SortedArray()
+func (s *CountMinSketch) TopK() []common.Counter {
+	return s.topStore.TopK(s.topK)
 }

@@ -2,14 +2,18 @@ package spacesaving
 
 import (
 	"container/list"
+
+	"github.com/lujiajing1126/go-space-saving/pkg/common"
 )
 
-type Counter struct {
+var _ common.Counter = (*counter)(nil)
+
+type counter struct {
 	// value holds the real counter value.
-	value int64
+	value uint64
 
 	// error keeps track of the error bar.
-	error int64
+	error uint64
 
 	// data is the actual data
 	data interface{}
@@ -19,8 +23,8 @@ type Counter struct {
 	bucket *list.Element
 }
 
-func newCounter(parent *list.Element) *Counter {
-	return &Counter{
+func newCounter(parent *list.Element) *counter {
+	return &counter{
 		value:  0,
 		error:  0,
 		data:   nil,
@@ -28,10 +32,10 @@ func newCounter(parent *list.Element) *Counter {
 	}
 }
 
-func (c *Counter) Val() interface{} {
+func (c *counter) Val() interface{} {
 	return c.data
 }
 
-func (c *Counter) Count() int64 {
+func (c *counter) Count() uint64 {
 	return c.value
 }

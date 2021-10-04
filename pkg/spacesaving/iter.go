@@ -6,7 +6,7 @@ import (
 
 type CounterIterator interface {
 	HasNext() bool
-	Next() *Counter
+	Next() *counter
 }
 
 var _ CounterIterator = (*counterIter)(nil)
@@ -46,6 +46,6 @@ func (c *counterIter) HasNext() bool {
 	return false
 }
 
-func (c *counterIter) Next() *Counter {
-	return c.counterElem.Value.(*Counter)
+func (c *counterIter) Next() *counter {
+	return c.counterElem.Value.(*counter)
 }

@@ -3,6 +3,7 @@ package spacesaving
 import (
 	"container/list"
 	"errors"
+	"github.com/lujiajing1126/go-space-saving/pkg/common"
 	"math"
 )
 
@@ -12,11 +13,11 @@ var (
 
 type StreamSummary struct {
 	// counter is the total number of elements that have been ever seen in the data stream.
-	counter int64
+	counter uint64
 
 	// capacity is the number of counters that can be held in this StreamSummary.
 	// this number is determined by the epsilon given by the user.
-	capacity int64
+	capacity uint64
 
 	// epsilon is the error toleration set by the user.
 	// Any element, ei, with frequency fi > \epsilon * N is guaranteed to be in the StreamSummary.
@@ -35,10 +36,14 @@ func NewStreamSummary(epsilon float64) (*StreamSummary, error) {
 		return nil, ErrInvalidEpsilon
 	}
 	capacity := math.Ceil(1.0 / epsilon)
+	return NewStreamSummaryWithFixedCap(uint64(capacity))
+}
+
+func NewStreamSummaryWithFixedCap(capacity uint64) (*StreamSummary, error) {
 	ss := &StreamSummary{
-		capacity: int64(capacity),
+		capacity: capacity,
 		counter:  0,
-		epsilon:  epsilon,
+		epsilon:  0,
 		buckets:  list.New(),
 		cache:    make(map[interface{}]*list.Element),
 	}
@@ -49,7 +54,7 @@ func NewStreamSummary(epsilon float64) (*StreamSummary, error) {
 func (ss *StreamSummary) init() {
 	zeroBucket := newBucket(0)
 	// init zeroBucket with counters
-	var i int64
+	var i uint64
 	elem := ss.buckets.PushBack(zeroBucket)
 	for i = 0; i < ss.capacity; i++ {
 		// add new Counter
@@ -66,7 +71,7 @@ func (ss *StreamSummary) Record(item interface{}) {
 	} else {
 		// if we haven't seen this item before
 		minCounterElem := ss.buckets.Back().Value.(*bucket).children.Front()
-		minCounter := minCounterElem.Value.(*Counter)
+		minCounter := minCounterElem.Value.(*counter)
 		// remove old from cache
 		if _, ok := ss.cache[minCounter.data]; ok {
 			delete(ss.cache, minCounter.data)
@@ -80,8 +85,8 @@ func (ss *StreamSummary) Record(item interface{}) {
 	}
 }
 
-func (ss *StreamSummary) TopK(top int) []*Counter {
-	counters := make([]*Counter, 0, top)
+func (ss *StreamSummary) TopK(top uint) []common.Counter {
+	counters := make([]common.Counter, 0, top)
 	iter := NewCounterIter(ss.buckets.Front())
 	for iter.HasNext() && top > 0 {
 		counters = append(counters, iter.Next())
@@ -91,7 +96,7 @@ func (ss *StreamSummary) TopK(top int) []*Counter {
 }
 
 func (ss *StreamSummary) increaseCounter(counterElem *list.Element) {
-	c := counterElem.Value.(*Counter)
+	c := counterElem.Value.(*counter)
 	bucketParentElem := c.bucket
 	bucketNextElem := bucketParentElem.Prev()
 	// remove the Counter from the old bucket
