@@ -3,8 +3,9 @@ package spacesaving
 import (
 	"container/list"
 	"errors"
-	"github.com/lujiajing1126/go-space-saving/pkg/common"
 	"math"
+
+	"github.com/lujiajing1126/go-space-saving/pkg/common"
 )
 
 var (
@@ -73,8 +74,39 @@ func (ss *StreamSummary) Record(item interface{}) {
 		minCounterElem := ss.buckets.Back().Value.(*bucket).children.Front()
 		minCounter := minCounterElem.Value.(*counter)
 		// remove old from cache
-		if _, ok := ss.cache[minCounter.data]; ok {
-			delete(ss.cache, minCounter.data)
+		if minCounter != nil {
+			if _, ok := ss.cache[minCounter.data]; ok {
+				delete(ss.cache, minCounter.data)
+			}
+		}
+		// set underlying data
+		minCounter.data = item
+		ss.increaseCounter(minCounterElem)
+		if len(ss.cache) <= int(ss.capacity) {
+			minCounter.error = minCounter.value
+		}
+	}
+}
+
+func (ss *StreamSummary) Update(item interface{}, newCount uint64) {
+	// increase the Counter since we have a new event
+	ss.counter++
+	if counterElem, ok := ss.cache[item]; ok {
+		// if we've already recorded this item
+		ss.increaseCounter(counterElem)
+	} else {
+		// if we haven't seen this item before
+		minCounterElem := ss.buckets.Back().Value.(*bucket).children.Front()
+		minCounter := minCounterElem.Value.(*counter)
+		// if current count value is less than minCount and the cache is full
+		if minCounter.Count() > newCount && uint64(len(ss.cache)) == ss.capacity {
+			return
+		}
+		// remove old from cache
+		if minCounter != nil {
+			if _, ok := ss.cache[minCounter.data]; ok {
+				delete(ss.cache, minCounter.data)
+			}
 		}
 		// set underlying data
 		minCounter.data = item

@@ -74,7 +74,7 @@ func (s *CountMinSketch) Record(item common.Serializable) {
 			min = s.m[i][loc]
 		}
 	}
-	s.topStore.Record(item)
+	s.topStore.Update(item, min)
 }
 
 // get the two basic hash function values for data.

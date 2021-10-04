@@ -15,7 +15,7 @@ func (sr StringRepl) Bytes() []byte {
 }
 
 func Benchmark_CountMinSketch_Insert_Top5(b *testing.B) {
-	cm, err := cms.NewWithEstimates(0.005, 0.999, 10)
+	cm, err := cms.NewWithEstimates(0.005, 0.9999, 10)
 	if err != nil {
 		b.Error("fail to create stream summary", err)
 	}

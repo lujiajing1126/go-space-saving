@@ -1,4 +1,4 @@
-package spacesaving_test
+package spacesaving
 
 import (
 	"io/ioutil"
@@ -8,8 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-
-	spaceSaving "github.com/lujiajing1126/go-space-saving/pkg/spacesaving"
 )
 
 var (
@@ -25,7 +23,7 @@ func prepareStream(sample string) []string {
 
 func Test_SummaryStream(t *testing.T) {
 	tester := assert.New(t)
-	ss, err := spaceSaving.NewStreamSummary(0.01)
+	ss, err := NewStreamSummary(0.01)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
@@ -47,7 +45,7 @@ func Test_SummaryStream(t *testing.T) {
 func Test_SummaryStream_givenItemsSeenInTheStream_Is_LargerThanCapacity(t *testing.T) {
 	tester := assert.New(t)
 	// Init with 100 counters
-	ss, err := spaceSaving.NewStreamSummary(0.01)
+	ss, err := NewStreamSummary(0.01)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
@@ -85,7 +83,7 @@ func Test_Lorem_Ipsum(t *testing.T) {
 	tester.NoError(err)
 
 	// 500 counters with error range of ~9 words (4623 * 0.002)
-	ss, err := spaceSaving.NewStreamSummary(0.002)
+	ss, err := NewStreamSummary(0.002)
 	tester.NoError(err)
 	tester.NotNil(ss)
 
@@ -97,8 +95,8 @@ func Test_Lorem_Ipsum(t *testing.T) {
 	topCounters := ss.TopK(5)
 	tester.Len(topCounters, 5)
 	var topStrings []string
-	for _, topitem := range topCounters {
-		topStrings = append(topStrings, topitem.Val().(string))
+	for _, topItem := range topCounters {
+		topStrings = append(topStrings, topItem.Val().(string))
 	}
 	tester.Contains(topStrings, "et")
 }
